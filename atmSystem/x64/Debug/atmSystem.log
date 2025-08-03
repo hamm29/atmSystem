@@ -1,2 +1,7 @@
 ﻿  atmSystem.cpp
+C:\Users\hamma\Documents\GitHub\atmSystem\atmSystem.cpp(49,25): warning C4267: '=': conversion from 'size_t' to 'short', possible loss of data
+C:\Users\hamma\Documents\GitHub\atmSystem\atmSystem.cpp(76,26): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
+C:\Users\hamma\Documents\GitHub\atmSystem\atmSystem.cpp(286,32): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+C:\Users\hamma\Documents\GitHub\atmSystem\atmSystem.cpp(293,74): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+C:\Users\hamma\Documents\GitHub\atmSystem\atmSystem.cpp(300,1): warning C4715: 'NormalWithdrawOperation': not all control paths return a value
   atmSystem.vcxproj -> C:\Users\hamma\Documents\GitHub\atmSystem\x64\Debug\atmSystem.exe
