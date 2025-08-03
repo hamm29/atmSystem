@@ -5,7 +5,6 @@
 #include <vector>
 #include <iomanip>
 
-
 using namespace std;
 
 const string ClientDateFile = "ClientsData.txt";
@@ -36,8 +35,9 @@ stClient CurrentClient;
 void Login();
 
 void ShowATMMainMenueScreen();
-
+void ShowQuickWithdraw();
 void GoBackToMainScreen();
+void ShowNormalWithdrawScreen();
 
 vector <string> SplitString(string s, string seperator = "#//#")
 {
@@ -144,22 +144,6 @@ void SaveClientDateToFile(string fileName, vector <stClient> Clients)
     }
 }
 
-void UpdateClientBalanceInFileByAccountNo(string fileName, string AccountNo, float newBalance)
-{
-    vector <stClient> Clients;
-    Clients = LoadClientDateFromFile(fileName);
-    for (stClient& C : Clients)
-    {
-        if (C.AccountNumber == AccountNo)
-        {
-            C.Balance = newBalance;
-            SaveClientDateToFile(fileName, Clients);
-            Clients = LoadClientDateFromFile(fileName);
-            break;
-        }
-    }
-}
-
 void ReadAccountNumberAndPinCode(string& AN, string& PinCode)
 {
     cout << "\nEnter Account Number? ";
@@ -170,7 +154,7 @@ void ReadAccountNumberAndPinCode(string& AN, string& PinCode)
 
 void ShowCheckBalance();
 
-void ShowQuickWithdrawOptionsScreenHeader()
+void ShowQuickWithdrawScreenHeader()
 {
     system("cls");
     cout << "=======================================================\n";
@@ -187,7 +171,6 @@ void ShowQuickWithdrawOptionsScreenHeader()
     cout << "\t [9] Exit";
     cout << "\n=======================================================\n";
     cout << "Your Balance is " << CurrentClient.Balance;
-    cout << "\nChoose what to withdraw from [1] to [8] ? ";
 }
 
 void ShowBalanceAfterWithdraw(float Balance)
@@ -205,46 +188,52 @@ bool isAmountExceedsBalance(float Balance, float Amount)
         return false;
 }
 
-void ShowDepositHeader()
+double ReadDepositAmount()
 {
-    cout << "=======================================================\n";
-    cout << "\t\tDeposit Screen";
-    cout << "\n=======================================================\n";
+    double Amount;
+    cout << "\nEnter a positive Deposit Amount? ";
+    cin >> Amount;
 
-}
-
-bool DepositOperation()
-{
-    float WithdrawAmount;
-    ShowDepositHeader();
-
-    cout << "Enter a positive Deposit Amount? ";
-    cin >> WithdrawAmount;
-
-    CurrentClient.Balance += WithdrawAmount;
-    UpdateClientBalanceInFileByAccountNo(ClientDateFile, CurrentClient.AccountNumber, CurrentClient.Balance);
-
-    cout << "\n\nDone Successfully. New balance is: " << CurrentClient.Balance;
-
-    GoBackToMainScreen();
-
-    return true;
-}
-
-bool WithdrawOperation(float WithdrawAmount = 0)
-{
-    bool AmountExeeds = false;
-    AmountExeeds = isAmountExceedsBalance(CurrentClient.Balance, WithdrawAmount);
-    if (AmountExeeds == false)
+    while (Amount <= 0)
     {
-        CurrentClient.Balance -= WithdrawAmount;
-        UpdateClientBalanceInFileByAccountNo(ClientDateFile, CurrentClient.AccountNumber, CurrentClient.Balance);
+        cout << "\nEnter a positive Deposit Amount? ";
+        cin >> Amount;
+    }
+    return Amount;
+}
+
+bool DepositBalanceToClientByAccountNumber(string AccountNo, double Amount, vector <stClient> vClients)
+{
+    char Ans = 'n';
+
+    cout << "\n\nAre you sure you want to perfrom this transaction? y/n? ";
+    cin >> Ans;
+
+    if (Ans == 'y' || Ans == 'Y')
+    {
+        for (stClient& C : vClients)
+        {
+            if (C.AccountNumber == AccountNo)
+            {
+                C.Balance += Amount;
+                SaveClientDateToFile(ClientDateFile, vClients); // there is a problem, which is 
+                cout << "\n\nDone Successfully. New balance is: " <<
+                    C.Balance;
+
+                return true;
+            }
+        }
         return false;
     }
-    else
-    {
-        return true;
-    }
+}
+
+void PerformDepositOption()
+{
+    double DepositAmount = ReadDepositAmount();
+
+    vector <stClient> vClients = LoadClientDateFromFile(ClientDateFile);
+    DepositBalanceToClientByAccountNumber(CurrentClient.AccountNumber, DepositAmount, vClients);
+    CurrentClient.Balance += DepositAmount;
 }
 
 void ShowNormalWithdrawScreenHeader()
@@ -255,135 +244,127 @@ void ShowNormalWithdrawScreenHeader()
     cout << "\nYour Balance is " << CurrentClient.Balance;
 }
 
-bool NormalWithdrawOperation()
+int ReadWithdrawAmount()
 {
-    int WithdrawAmount = 0;
-    bool AmountExeeds = false;
+    int Amount;
 
-    do
+    cout << "\nEnter an amount multiple of 5's ? ";
+    cin >> Amount;
+
+    while (Amount % 5 != 0)
     {
-        system("cls");
-        ShowNormalWithdrawScreenHeader();
-        cout << "\nPlease enter an amount multiple of 5's ? ";        
-        cin >> WithdrawAmount;
-        while(WithdrawAmount % 5 != 0 )
-        {
-            cout << "\nPlease enter an amount multiple of 5's ? ";
-            cin >> WithdrawAmount;
-        }
-
-        if (!WithdrawOperation(WithdrawAmount))
-        {
-            ShowBalanceAfterWithdraw(CurrentClient.Balance);
-            return true;
-        }
-        else
-        {
-            AmountExeeds = isAmountExceedsBalance(CurrentClient.Balance, WithdrawAmount);
-            cout << "\nThe amount exceeds your Balance, make another choice.";
-            cout << "Press Any key to continue...";
-            system("pause>0");
-            //return false;
-        }
-    } while (AmountExeeds);
+        cout << "\nEnter an amount multiple of 5's? ";
+        cin >> Amount;
+    }
+    return Amount;
 }
 
-void QuickWithdrawOperation()
+void PerformNormalWithdrawOption()
 {
-    short userChoice;
-    float WithdrawAmount = 0;
-    bool AmountExeeds = false;
-
-    do
+    int WithdrawAmount = ReadWithdrawAmount();
+    
+    if (WithdrawAmount > CurrentClient.Balance)
     {
-        cin >> userChoice;
-        switch (enQucikWithdarq(userChoice))
-        {
-        case twenty:
-            AmountExeeds = WithdrawOperation(20);
-            break;
-        case fifty:
-            AmountExeeds = WithdrawOperation(50);
-            break;
-        case oneHundred:
-            AmountExeeds = WithdrawOperation(100);
-            break;
-        case twoHundred:
-            AmountExeeds = WithdrawOperation(200);
-            break;
-        case fourHundred:
-            AmountExeeds = WithdrawOperation(400);
-            break;
-        case sixHundred:
-            AmountExeeds = WithdrawOperation(600);
-            break;
-        case eightHundred:
-            AmountExeeds = WithdrawOperation(800);
-            break;
-        case oneThousand:
-            AmountExeeds = WithdrawOperation(1000);
-            break;
-        case Exit:
-            ShowATMMainMenueScreen();
-            break;
-        default:
-            break;
-        }
+        cout << "\nThe amount exceeds your balance, make another choice.\n";
+        cout << "Press Anykey to continue...";
+        system("pause>0");
+        ShowNormalWithdrawScreen();
+        return;
+    }
 
-        if (AmountExeeds == false)
-        {
-            ShowBalanceAfterWithdraw(CurrentClient.Balance);
-        }
-        else
-        {
-            cout << "\nThe amount exceeds your balance, make another choice.";
-            cout << "\nPress Anykey to continue...";
-            system("pause>0");
-            ShowQuickWithdrawOptionsScreenHeader();
-        }
+    vector <stClient> vClients = LoadClientDateFromFile(ClientDateFile);
+    DepositBalanceToClientByAccountNumber(CurrentClient.AccountNumber, WithdrawAmount * -1, vClients);
+    CurrentClient.Balance -= WithdrawAmount;
 
-    } while (AmountExeeds);
 }
 
-void ShowQuickWithdrawOptionsScreen()
+short getQuickWithdrawAmount(short QuickWithdrawOption)
 {
-    ShowQuickWithdrawOptionsScreenHeader();
-    QuickWithdrawOperation();
+    switch (QuickWithdrawOption)
+    {
+    case 1:
+        return 20;
+    case 2:
+        return 50;
+    case 3:
+        return 100;
+    case 4:
+        return 200;
+    case 5:
+        return 400;
+    case 6:
+        return 600;
+    case 7:
+        return 800;
+    case 8:
+        return 1000;
+    default:
+        return 0;
+    }
 }
 
-void ShowNormalWithdrawScreen()
+short ReadQuickWithdrawOption()
 {
-    NormalWithdrawOperation();
+    short Choice = 0;
+    while (Choice < 1 || Choice >9)
+    {
+        cout << "\nChoose what to do from [1] to [9]? ";
+        cin >> Choice;
+    }
+
+    return Choice;
+}
+
+void QuickWithdrawOperation(short QuickWithdrawOption)
+{
+    if (QuickWithdrawOption == 9)
+        return;
+
+    short WithdrawBalance = getQuickWithdrawAmount(QuickWithdrawOption);
+    
+    if (WithdrawBalance > CurrentClient.Balance)
+    {
+        cout << "\nThe amount exceeds your balance, make another choice.\n";
+        cout << "Press Anykey to continue...";
+        system("pause>0");
+        ShowQuickWithdraw();
+        return;
+    }
+    vector <stClient> vClients = LoadClientDateFromFile(ClientDateFile);
+    DepositBalanceToClientByAccountNumber(CurrentClient.AccountNumber, WithdrawBalance * -1, vClients);
+    CurrentClient.Balance -= WithdrawBalance;
 }
 
 //  ATM Main Menue Options functions:
 void ShowQuickWithdraw()
 {
-    ShowQuickWithdrawOptionsScreen();
+    ShowQuickWithdrawScreenHeader();
+    QuickWithdrawOperation(ReadQuickWithdrawOption());
 }
 
- void ShowNormalWithdraw()
+void ShowNormalWithdrawScreen()
 {
-     ShowNormalWithdrawScreen();
+    ShowNormalWithdrawScreenHeader();
+    PerformNormalWithdrawOption();
 }
 
 void ShowDeposit()
 {
-    DepositOperation();
+    system("cls");
+    cout << "=======================================================\n";
+    cout << "\t\tDeposit Screen";
+    cout << "\n=======================================================\n";
+    PerformDepositOption();
 }
 
 void ShowCheckBalance()
 {
-
     cout << "=======================================================\n";
     cout << "\t\tcheck Balance Screen";
     cout << "\n=======================================================\n";
-
     cout << "Your Balance is " << CurrentClient.Balance;
 }
 //-------------------------------------------------------------------------
-
-
 void GoBackToMainScreen()
 {
     cout << "\n\nPress any key to go back to Main Menue...";
@@ -403,7 +384,7 @@ void PerformATMMainMenue(enATMMainMenueOptions ClientChoice)
         break;
     case NormalWithdraw:
         system("cls");
-        ShowNormalWithdraw();
+        ShowNormalWithdrawScreen();
         GoBackToMainScreen();
         break;
     case Deposit:
@@ -417,11 +398,20 @@ void PerformATMMainMenue(enATMMainMenueOptions ClientChoice)
         GoBackToMainScreen();
         break;
     case Logout:
+        system("cls");
         Login();
         break;
     default:
         break;
     }
+}
+
+bool LoadClientInfo(string AccountNumber, string PinCode)
+{
+    if (FindClientByAccountNumAndPinCode(AccountNumber, PinCode, CurrentClient))
+        return true;
+    else
+        return false;
 }
 
 short ReadClientChoice()
@@ -447,17 +437,14 @@ void ShowATMMainMenueScreen()
     PerformATMMainMenue(enATMMainMenueOptions(ReadClientChoice()));
 }
 
-void ShowLoginScreen()
+void Login()
 {
     bool LoginFaild = false;
-
     string AccountNum, PinCode;
-    vector <stClient> vClients = LoadClientDateFromFile(ClientDateFile);
 
     do
     {
         system("cls");
-
         cout << "\n--------------------------------\n";
         cout << "\tLogin Screen";
         cout << "\n--------------------------------\n";
@@ -468,23 +455,9 @@ void ShowLoginScreen()
         }
         ReadAccountNumberAndPinCode(AccountNum, PinCode);
 
-        if (!FindClientByAccountNumAndPinCode(AccountNum, PinCode, CurrentClient))
-        {
-            LoginFaild = true;
-        }
-        else
-        {
-            ShowATMMainMenueScreen();
-            LoginFaild = false;
-        }
-
+        LoginFaild = !LoadClientInfo(AccountNum, PinCode);
     } while (LoginFaild);
-
-}
-
-void Login()
-{
-    ShowLoginScreen();
+    ShowATMMainMenueScreen();
 }
 
 int main()
